@@ -6,15 +6,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.base import MIMEBase 
 from email import encoders 
-   
-#!/usr/bin/python
+
+#importing the library that is used to be able to communicate with Raspberry Pi (and sensors attached to it)
 import RPi.GPIO as GPIO
 import time
  
-
 count = 0
 #GPIO SETUP
-channel = 21
+channel = 21 #using GPIO 21 pin to connect soil moisture sensor
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(channel, GPIO.IN)
 sendNotification=0
@@ -27,25 +26,18 @@ def callback(channel):
                 print(count)
                 if count==3 and sendNotification==0:
                     sendNotification=1
-					#Takepicture()
+		    #Takepicture()
                     emailSent(sendNotification)
                     print("Mail about needing to water plant sent.")
         else:
                 print("Moisture Detected!")
                 count = 0
  
-GPIO.add_event_detect(channel, GPIO.BOTH)  # let us know when the pin goes HIGH or LOW
-GPIO.add_event_callback(channel, callback)  # assign function to GPIO PIN, Run function on change
+GPIO.add_event_detect(channel, GPIO.BOTH)  #lets us know when the pin goes HIGH or LOW
+GPIO.add_event_callback(channel, callback)  #assign function to GPIO PIN, Run function on change
 print(count)
-# infinite loop
-##while True:
-##        time.sleep(1)
 
-
-
-
-
-
+#code to detect temperature using the on-board temperature sensor
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
 
@@ -71,84 +63,75 @@ def read_temp():
         temp_f = temp_c * 9.0 / 5.0 + 32.0
         return temp_c, temp_f
 
-
-
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 15 20:14:46 2019
-
-@author: Admin
-"""
-
-# Python code to illustrate Sending mail with attachments 
-# from your Gmail account   
-# libraries to be imported
+#sends email from one specified Gmail account (with attachments) to another
 def emailSent(sendNotification):
     import smtplib 
     from email.mime.multipart import MIMEMultipart 
     from email.mime.text import MIMEText 
     from email.mime.base import MIMEBase 
     from email import encoders 
+     
+    #for privacy purposes, a made up email address has been entered below
+    fromaddr = "hello@gmail.com"
+    toaddr = "hello@gmail.com"
        
-    fromaddr = "ayushinaphade@gmail.com"
-    toaddr = "soha.parasnis@cumminscollege.in"
-       
-    # instance of MIMEMultipart 
+    #instance of MIMEMultipart 
     msg = MIMEMultipart() 
       
-    # storing the senders email address   
+    #storing the senders email address   
     msg['From'] = fromaddr 
       
-    # storing the receivers email address  
+    #storing the receivers email address  
     msg['To'] = toaddr 
       
-    # storing the subject  
+    #storing the subject  
     msg['Subject'] = "Plant details with moisture update"
       
-    # string to store the body of the mail 
+    #string to store the body of the mail 
     body = "This is your plant" + ".  The current temperature is : "+str(read_temp())+"."
     if sendNotification==1:
         body=body+"Low moisture...Please water your plant."
       
-    # attach the body with the msg instance 
+    #attach the body with the msg instance 
     msg.attach(MIMEText(body, 'plain')) 
       
-    # open the file to be sent  
+    #open the file to be sent  
     filename = "Plant.jpg"
     attachment = open("/home/pi/Plant.jpg", "rb") 
       
-    # instance of MIMEBase and named as p 
+    #instance of MIMEBase and named as p 
     p = MIMEBase('application', 'octet-stream') 
       
-    # To change the payload into encoded form 
+    #To change the payload into encoded form 
     p.set_payload((attachment).read()) 
       
-    # encode into base64 
+    #encode into base64 
     encoders.encode_base64(p) 
        
     p.add_header('Content-Disposition', "attachment; filename= %s" % filename) 
       
-    # attach the instance 'p' to instance 'msg' 
+    #attach the instance 'p' to instance 'msg' 
     msg.attach(p) 
       
-    # creates SMTP session 
+    #creates SMTP session 
     s = smtplib.SMTP('smtp.gmail.com', 587) 
       
-    # start TLS for security 
+    #start TLS for security 
     s.starttls() 
       
-    # Authentication 
+    #Authentication 
     s.login(fromaddr, "password") 
       
-    # Converts the Multipart msg into a string 
+    #Converts the Multipart msg into a string 
     text = msg.as_string() 
       
-    # sending the mail 
+    #sending the mail 
     s.sendmail(fromaddr, toaddr, text) 
       
-    # terminating the session 
+    #terminating the session 
     s.quit()
 
+#code that makes use of a camera attached to Raspberry Pi to take a picture of the plant
 def Takepicture():
         import picamera
         
